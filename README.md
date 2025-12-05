@@ -1,5 +1,8 @@
 # Kems
 
+A modern multiplayer card-game project built with React, TypeScript, and Vite, styled with Tailwind CSS and shadcn/ui.
+You can work locally with your preferred IDE, edit directly on GitHub, or use GitHub Codespaces—whatever fits your workflow.
+
 **Use your preferred IDE**
 
 If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
