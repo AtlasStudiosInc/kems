@@ -1,6 +1,6 @@
 # Kems
 
-A modern multiplayer card-game project built with React, TypeScript, and Vite, styled with Tailwind CSS and shadcn/ui.
+A modern mobile card-game project built with React, TypeScript, and Vite, styled with Tailwind CSS and shadcn/ui.
 You can work locally with your preferred IDE, edit directly on GitHub, or use GitHub Codespaces—whatever fits your workflow.
 
 **Use your preferred IDE**
