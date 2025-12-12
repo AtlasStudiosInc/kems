@@ -3,11 +3,20 @@ import { useState, useEffect } from "react";
 import { GameCard, Card, Suit, Rank } from "./GameCard";
 import { Button } from "./ui/button";
 import { motion, AnimatePresence } from "framer-motion";
-import swapSoundUrl from "../assets/Audio/swap.mp3";
+// --- AUDIO IMPORTS ---
+import swapSoundUrl from "../assets/Audio/swap.wav";
+import winSoundUrl from "../assets/Audio/win.mp3";
+import loseSoundUrl from "../assets/Audio/lose.mp3";
+
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
 
 const SUITS: Suit[] = ["spades", "hearts", "diamonds", "clubs"];
 const RANKS: Rank[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13];
+
+// Helper to check if running in a Capacitor environment
+const isCapacitor = typeof window !== "undefined" && (window as any).Capacitor;
+
+// --- COMMON GAME LOGIC ---
 
 export const createDeck = (): Card[] => {
   const deck: Card[] = [];
@@ -41,7 +50,6 @@ export const checkWinningHand = (hand: Card[]): boolean => {
 };
 
 export const determineTargetRank = (hand: Card[]): Rank => {
-  // Count ranks in hand
   const rankCounts = hand.reduce(
     (acc, card) => {
       acc[card.rank] = (acc[card.rank] || 0) + 1;
@@ -50,7 +58,6 @@ export const determineTargetRank = (hand: Card[]): Rank => {
     {} as Record<Rank, number>
   );
 
-  // Find if there's a duplicate rank
   const duplicateRank = Object.entries(rankCounts).find(
     ([_, count]) => count >= 2
   );
@@ -58,7 +65,6 @@ export const determineTargetRank = (hand: Card[]): Rank => {
     return parseInt(duplicateRank[0]) as Rank;
   }
 
-  // Otherwise pick a random rank from the hand
   const randomIndex = Math.floor(Math.random() * hand.length);
   return hand[randomIndex].rank;
 };
@@ -68,13 +74,11 @@ export const getAIMove = (
   tableCards: Card[],
   targetRank: Rank
 ): { tableIndex: number; handIndex: number } | null => {
-  // Look for a table card that matches the target rank
   const targetTableIndex = tableCards.findIndex(
     (card) => card.rank === targetRank
   );
 
   if (targetTableIndex !== -1) {
-    // Find a card in hand that is NOT the target rank to swap
     const nonTargetHandIndex = aiHand.findIndex(
       (card) => card.rank !== targetRank
     );
@@ -84,19 +88,36 @@ export const getAIMove = (
     }
   }
 
-  // No matching card found on table, return null (AI passes this round)
   return null;
 };
 
 interface GameBoardProps {
   onBackToMenu?: () => void;
+  onInternalNewGame?: () => void;
 }
 
-export const GameBoard = ({ onBackToMenu }: GameBoardProps) => {
-  const [deck, setDeck] = useState<Card[]>(createDeck());
-  const [playerHand, setPlayerHand] = useState<Card[]>([]);
-  const [aiHand, setAIHand] = useState<Card[]>([]);
-  const [tableCards, setTableCards] = useState<Card[]>([]);
+// Helper to perform the initial card dealing once per component lifecycle
+const dealInitialCards = () => {
+  const newDeck = createDeck();
+  const { cards: pHand, remainingDeck: deck1 } = dealCards(newDeck, 4);
+  const { cards: aHand, remainingDeck: deck2 } = dealCards(deck1, 4);
+  const { cards: tCards, remainingDeck: finalDeck } = dealCards(deck2, 4);
+  return { pHand, aHand, tCards, finalDeck };
+};
+
+export const GameBoard = ({
+  onBackToMenu,
+  onInternalNewGame,
+}: GameBoardProps) => {
+  // --- SYNCHRONOUS INITIALIZATION FIX ---
+  const { pHand, aHand, tCards, finalDeck } = dealInitialCards();
+
+  const [deck, setDeck] = useState<Card[]>(finalDeck);
+  const [playerHand, setPlayerHand] = useState<Card[]>(pHand);
+  const [aiHand, setAIHand] = useState<Card[]>(aHand);
+  const [tableCards, setTableCards] = useState<Card[]>(tCards);
+
+  // --- REST OF STATE ---
   const [recycledCards, setRecycledCards] = useState<Card[]>([]);
   const [selectedTableCard, setSelectedTableCard] = useState<number | null>(
     null
@@ -107,13 +128,67 @@ export const GameBoard = ({ onBackToMenu }: GameBoardProps) => {
   >("playing");
   const [turnCount, setTurnCount] = useState(0);
   const [aiTargetRank, setAiTargetRank] = useState<Rank | null>(null);
-  const [gameInitialized, setGameInitialized] = useState(false);
+  const [gameInitialized, setGameInitialized] = useState(true);
 
+  // --- AUDIO & HAPTICS UTILITIES ---
+
+  const triggerHaptic = (style: ImpactStyle) => {
+    if (isCapacitor && Haptics) {
+      Haptics.impact({ style });
+    }
+  };
+
+  const playSound = (url: string, volume: number = 0.5) => {
+    const audio = new Audio(url);
+    audio.volume = volume;
+    audio.play().catch((error) => {
+      // Catch error to prevent console spam on browser autoplay block
+      if (error.name !== "NotAllowedError") {
+        console.error(`Audio playback failed for ${url}:`, error);
+      }
+    });
+  };
+
+  // --- EFFECT FOR INITIAL AI TURN ---
   useEffect(() => {
-    initNewGame();
+    const targetRank = determineTargetRank(aiHand);
+    setAiTargetRank(targetRank);
+
+    // The computer plays first
+    setTimeout(() => {
+      performAITurnWithState(aiHand, tableCards, targetRank);
+    }, 500);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // --- EFFECT FOR WIN/LOSS CHECK ---
+  useEffect(() => {
+    if (!gameInitialized || playerHand.length < 4 || aiHand.length < 4) return;
+
+    if (checkWinningHand(playerHand)) {
+      setGameStatus("playerWin");
+      playSound(winSoundUrl, 0.7); // WIN SOUND
+      triggerHaptic(ImpactStyle.Heavy);
+    } else if (checkWinningHand(aiHand)) {
+      setGameStatus("aiWinPending");
+      playSound(loseSoundUrl, 0.7); // LOSS SOUND
+      triggerHaptic(ImpactStyle.Heavy);
+      setTimeout(() => {
+        setGameStatus("aiWin");
+      }, 2000);
+    }
+  }, [playerHand, aiHand, gameInitialized]);
+
+  // --- CORE GAME FUNCTIONS ---
+
   const initNewGame = () => {
+    // If the external handler is provided, use it to force a full component remount
+    if (onInternalNewGame) {
+      onInternalNewGame();
+      return;
+    }
+
+    // Fallback/internal reset logic (same as the old initNewGame logic)
     const newDeck = createDeck();
     const { cards: pHand, remainingDeck: deck1 } = dealCards(newDeck, 4);
     const { cards: aHand, remainingDeck: deck2 } = dealCards(deck1, 4);
@@ -127,74 +202,34 @@ export const GameBoard = ({ onBackToMenu }: GameBoardProps) => {
     setSelectedTableCard(null);
     setSelectedHandCard(null);
     setGameStatus("playing");
-    setGameInitialized(true);
     setTurnCount(0);
     const targetRank = determineTargetRank(aHand);
     setAiTargetRank(targetRank);
-    console.log(
-      "AI target rank:",
-      targetRank,
-      "AI hand:",
-      aHand.map((c) => `${c.rank}-${c.suit}`)
-    );
 
-    // The computer plays first
     setTimeout(() => {
       performAITurnWithState(aHand, tCards, targetRank);
     }, 500);
   };
 
-  useEffect(() => {
-    // Only check wins after game is initialized and hands are dealt
-    if (!gameInitialized || playerHand.length < 4 || aiHand.length < 4) return;
-
-    if (checkWinningHand(playerHand)) {
-      setGameStatus("playerWin");
-      Haptics.impact({ style: ImpactStyle.Heavy });
-    } else if (checkWinningHand(aiHand)) {
-      // Show AI cards first, then reveal win after 2 seconds
-      setGameStatus("aiWinPending");
-      Haptics.impact({ style: ImpactStyle.Heavy });
-      setTimeout(() => {
-        setGameStatus("aiWin");
-      }, 2000);
-    }
-  }, [playerHand, aiHand, gameInitialized]);
-
-  // Player selects their hand card first
   const handlePlayerHandCardClick = (index: number) => {
     if (gameStatus !== "playing") return;
-    Haptics.impact({ style: ImpactStyle.Light });
+    triggerHaptic(ImpactStyle.Light);
 
     if (selectedHandCard === index) {
-      // Deselect if clicking the same card
       setSelectedHandCard(null);
     } else {
       setSelectedHandCard(index);
     }
   };
 
-  // Play swap sound
-  const playSwapSound = () => {
-    const audio = new Audio(swapSoundUrl);
-
-    audio.volume = 0.5;
-    audio.play().catch((error) => {
-      console.error("Audio playback failed:", error);
-    });
-  };
-
-  // Then player selects a table card to swap with
   const handleTableCardClick = (index: number) => {
     if (gameStatus !== "playing" || selectedHandCard === null) return;
 
-    Haptics.impact({ style: ImpactStyle.Medium });
-    playSwapSound();
+    triggerHaptic(ImpactStyle.Medium);
+    playSound(swapSoundUrl);
 
-    // Mark the swap happening for animation
     setSelectedTableCard(index);
 
-    // Delay the actual swap to allow animation
     setTimeout(() => {
       const newPlayerHand = [...playerHand];
       const newTableCards = [...tableCards];
@@ -214,20 +249,12 @@ export const GameBoard = ({ onBackToMenu }: GameBoardProps) => {
     currentTableCards: Card[],
     targetRank: Rank
   ) => {
-    console.log(
-      "AI turn - Target:",
-      targetRank,
-      "Table cards:",
-      currentTableCards.map((c) => `${c.rank}-${c.suit}`)
-    );
     const move = getAIMove(currentAIHand, currentTableCards, targetRank);
-    console.log("AI move:", move);
 
     if (move) {
-      Haptics.impact({ style: ImpactStyle.Medium });
-      playSwapSound();
+      triggerHaptic(ImpactStyle.Medium);
+      playSound(swapSoundUrl);
 
-      // Delay the swap for visible animation
       setTimeout(() => {
         const newAIHand = [...currentAIHand];
         const newTableCards = [...currentTableCards];
@@ -246,16 +273,13 @@ export const GameBoard = ({ onBackToMenu }: GameBoardProps) => {
   const nextRound = () => {
     if (gameStatus !== "playing" || !aiTargetRank) return;
 
-    // Move current table cards to recycle
     const oldTableCards = [...tableCards];
     setRecycledCards((prev) => [...prev, ...oldTableCards]);
 
-    // Deal 4 new cards to table
     const { cards: newTableCards, remainingDeck: newDeck } = dealCards(deck, 4);
 
     let finalTableCards: Card[];
     if (newTableCards.length < 4) {
-      // Reshuffle recycle bin if deck is empty
       const reshuffledDeck = [...recycledCards, ...newDeck].sort(
         () => Math.random() - 0.5
       );
@@ -275,15 +299,14 @@ export const GameBoard = ({ onBackToMenu }: GameBoardProps) => {
 
     setSelectedTableCard(null);
     setSelectedHandCard(null);
-    Haptics.impact({ style: ImpactStyle.Light });
+    triggerHaptic(ImpactStyle.Light);
 
-    // The computer plays first in new round
     setTimeout(() => {
       performAITurnWithState(aiHand, finalTableCards, aiTargetRank);
     }, 500);
   };
 
-  // Game Layout
+  // --- GAME LAYOUT RENDER ---
   return (
     <div
       className="min-h-screen p-4 flex flex-col bg-cover bg-center bg-no-repeat"

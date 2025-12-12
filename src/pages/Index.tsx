@@ -9,6 +9,7 @@ type Screen = "splash" | "menu" | "game";
 
 const Index = () => {
   const [currentScreen, setCurrentScreen] = useState<Screen>("splash");
+  const [gameKey, setGameKey] = useState(0);
   const { toast } = useToast();
 
   const handleSplashComplete = () => {
@@ -17,6 +18,11 @@ const Index = () => {
 
   const handlePlay = () => {
     setCurrentScreen("game");
+  };
+
+  // Reset the game without changing screens
+  const handleInternalNewGame = () => {
+    setGameKey((prev) => prev + 1);
   };
 
   const handleAbout = () => {
@@ -61,7 +67,11 @@ const Index = () => {
         />
       )}
       {currentScreen === "game" && (
-        <GameBoard key="game" onBackToMenu={handleBackToMenu} />
+        <GameBoard
+          key={`game-${gameKey}`}
+          onBackToMenu={handleBackToMenu}
+          onInternalNewGame={handleInternalNewGame}
+        />
       )}
     </AnimatePresence>
   );
