@@ -14,6 +14,7 @@ const makeCard = (rank: Rank, suit: string): Card => ({
   suit: suit as any,
 });
 
+// Creating a deck of 52 cards.
 describe("createDeck", () => {
   test("creates a deck of 52 unique cards", () => {
     const deck = createDeck();
@@ -36,6 +37,7 @@ describe("createDeck", () => {
   });
 });
 
+// Dealing the cards.
 describe("dealCards", () => {
   test("deals the correct number of cards", () => {
     const deck = Array.from({ length: 10 }, (_, i) =>
@@ -55,6 +57,7 @@ describe("dealCards", () => {
   });
 });
 
+// Check the winning hand.
 describe("checkWinningHand", () => {
   test("returns true when hand contains four of the same rank", () => {
     const hand = [
@@ -77,6 +80,7 @@ describe("checkWinningHand", () => {
   });
 });
 
+// Determine the target rank for the computer.
 describe("determineTargetRank", () => {
   test("returns the rank that appears twice", () => {
     const hand = [
@@ -102,6 +106,7 @@ describe("determineTargetRank", () => {
   });
 });
 
+// Make move when the target card is on the table.
 describe("getAIMove", () => {
   test("returns a move when target rank is on the table", () => {
     const aiHand = [
@@ -144,7 +149,7 @@ describe("getAIMove", () => {
     expect(move).toBeNull();
   });
 
-  test("returns null if AI has only target-rank cards", () => {
+  test("returns null if computer has only target-rank cards", () => {
     const aiHand = [
       makeCard(5, "spades"),
       makeCard(5, "hearts"),

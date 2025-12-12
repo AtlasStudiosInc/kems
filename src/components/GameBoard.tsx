@@ -1,7 +1,9 @@
+/* eslint-disable react-refresh/only-export-components */
 import { useState, useEffect } from "react";
 import { GameCard, Card, Suit, Rank } from "./GameCard";
 import { Button } from "./ui/button";
 import { motion, AnimatePresence } from "framer-motion";
+import swapSoundUrl from "../assets/Audio/swap.mp3";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
 
 const SUITS: Suit[] = ["spades", "hearts", "diamonds", "clubs"];
@@ -174,11 +176,12 @@ export const GameBoard = ({ onBackToMenu }: GameBoardProps) => {
 
   // Play swap sound
   const playSwapSound = () => {
-    const audio = new Audio(
-      "https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3"
-    );
+    const audio = new Audio(swapSoundUrl);
+
     audio.volume = 0.5;
-    audio.play().catch(() => {});
+    audio.play().catch((error) => {
+      console.error("Audio playback failed:", error);
+    });
   };
 
   // Then player selects a table card to swap with
@@ -280,6 +283,7 @@ export const GameBoard = ({ onBackToMenu }: GameBoardProps) => {
     }, 500);
   };
 
+  // Game Layout
   return (
     <div
       className="min-h-screen p-4 flex flex-col bg-cover bg-center bg-no-repeat"

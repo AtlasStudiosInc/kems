@@ -1,6 +1,9 @@
 {
   "files": [],
-  "references": [{ "path": "./tsconfig.app.json" }, { "path": "./tsconfig.node.json" }],
+  "references": [
+    { "path": "./tsconfig.app.json" },
+    { "path": "./tsconfig.node.json" }
+  ],
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
@@ -11,6 +14,19 @@
     "skipLibCheck": true,
     "allowJs": true,
     "noUnusedLocals": false,
-    "strictNullChecks": false
+    "strictNullChecks": false,
+
+    // --- Recommended Additions to fix Jest/TS Errors ---
+
+    // 1. Fixes the "TS6142: --jsx is not set" error (since you have .tsx files)
+    "jsx": "react-jsx",
+
+    // 2. Addresses the "TS151001: esModuleInterop" warning (recommended for modern TS/Node/React)
+    "esModuleInterop": true,
+
+    // 3. Jest often requires common settings like target and module
+    "target": "ES2020",
+    "module": "ESNext",
+    "moduleResolution": "node"
   }
 }

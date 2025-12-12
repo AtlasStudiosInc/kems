@@ -81,6 +81,7 @@
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.20",
     "globals": "^15.15.0",
+    "jest": "^30.2.0",
     "lovable-tagger": "^1.1.11",
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.17",
@@ -88,5 +89,18 @@
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.38.0",
     "vite": "^7.2.4"
-  }
+  },
+  "description": "**URL**: https://lovable.dev/projects/7ea985dc-f705-4382-942e-87c23d4a110f",
+  "main": "eslint.config.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AtlasStudiosInc/kems.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/AtlasStudiosInc/kems/issues"
+  },
+  "homepage": "https://github.com/AtlasStudiosInc/kems#readme"
 }
