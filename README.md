@@ -1,18 +1,7 @@
-# Welcome to your Lovable project
+# Kems
 
-## Project info
-
-**URL**: https://lovable.dev/projects/7ea985dc-f705-4382-942e-87c23d4a110f
-
-## How can I edit this code?
-
-There are several ways of editing your application.
-
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/7ea985dc-f705-4382-942e-87c23d4a110f) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
+A modern mobile card-game project built with React, TypeScript, and Vite, styled with Tailwind CSS and shadcn/ui.
+You can work locally with your preferred IDE, edit directly on GitHub, or use GitHub Codespaces—whatever fits your workflow.
 
 **Use your preferred IDE**
 
@@ -60,14 +49,3 @@ This project is built with:
 - shadcn-ui
 - Tailwind CSS
 
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/7ea985dc-f705-4382-942e-87c23d4a110f) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
