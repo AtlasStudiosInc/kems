@@ -42,8 +42,8 @@ export const GameCard = ({
           "relative rounded-lg overflow-hidden",
           size === "sm" ? "aspect-[2/3]" : "aspect-[2/3]"
         )}
-        transition={{ type: "spring", stiffness: 10, damping: 22, mass: 1.5 }}
-        //transition={{ type: "spring", stiffness: 40, damping: 25 }}
+        //transition={{ type: "spring", stiffness: 10, damping: 22, mass: 1.5 }}
+        transition={{ type: "spring", stiffness: 40, damping: 25 }}
       >
         <img
           src={getCardBackImagePath()}
